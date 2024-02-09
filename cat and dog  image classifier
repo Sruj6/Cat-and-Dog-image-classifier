@@ -1,0 +1,67 @@
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
+
+IMAGE_WIDTH = 128
+IMAGE_HEIGHT = 128
+BATCH_SIZE = 32
+
+train_path = 'path/to/train_data'
+test_path = 'path/to/test_data'
+
+train_datagen = ImageDataGenerator(rescale=1./255,
+                                   shear_range=0.2,
+                                   zoom_range=0.2,
+                                   horizontal_flip=True)
+
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+train_generator = train_datagen.flow_from_directory(train_path,
+                                                    target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
+                                                    batch_size=BATCH_SIZE,
+                                                    class_mode='binary')
+
+test_generator = test_datagen.flow_from_directory(test_path,
+                                                  target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
+                                                  batch_size=BATCH_SIZE,
+                                                  class_mode='binary')
+
+model = Sequential()
+
+model.add(Conv2D(32, (3, 3), input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(128, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Flatten())
+
+model.add(Dense(units=128, activation='relu'))
+model.add(Dense(units=1, activation='sigmoid'))
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+history = model.fit(train_generator, epochs=10, validation_data=test_generator)
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Training and Validation Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+model.save('cat_dog_classifier.h5')
